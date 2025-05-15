@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],  // Allows all HTTP methods
 
-    'allowed_origins' => ['*'],  // Allow all origins (you can restrict this later if needed)
+    'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:3000')],  // Allow all origins (you can restrict this later if needed)
 
     'allowed_origins_patterns' => [],
 
