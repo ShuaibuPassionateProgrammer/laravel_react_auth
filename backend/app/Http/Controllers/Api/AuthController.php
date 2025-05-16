@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\SignupRequest;
 use App\Models\User;
-use http\Env\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -14,46 +13,68 @@ class AuthController extends Controller
 {
     public function signup(SignupRequest $request)
     {
-        $data = $request->validated();
-        /** @var \App\Models\User $user */
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => bcrypt($data['password'])
-        ]);
+        try {
+            $data = $request->validated();
+            /** @var \App\Models\User $user */
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => bcrypt($data['password'])
+            ]);
 
-        $token = $user->createToken('main')->plainTextToken;
-        return response(compact('user', 'token'));
-        /*try {
-            
+            $token = $user->createToken('main')->plainTextToken;
+            return response()->json([
+                'user' => $user,
+                'token' => $token
+            ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'An error occurred during signup. Please try again later.'
+                'message' => 'An error occurred during signup. Please try again later.',
+                'error' => $e->getMessage() // Remove or comment out in production
             ], 500);
-        }*/
+        }
     }
 
     public function login(LoginRequest $request)
     {
-        $credentials = $request->validated();
+        try {
+            $credentials = $request->validated();
 
-        if(!Auth::attempt($credentials)) {
-            return response([
-                'message' => 'Provided email address or password is incorrect!'
-            ], 422);
+            if (!Auth::attempt($credentials)) {
+                return response()->json([
+                    'message' => 'Provided email address or password is incorrect!'
+                ], 422);
+            }
+
+            /** @var User $user */
+            $user = Auth::user();
+            $token = $user->createToken('main')->plainTextToken;
+            return response()->json([
+                'user' => $user,
+                'token' => $token
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An unexpected error occurred. Please try again.',
+                'error' => $e->getMessage() // Remove or comment out in production
+            ], 500);
         }
-
-        /** @var User $user */
-        $user = Auth::user();
-        $token = $user->createToken('main')->plainTextToken;
-        return response(compact('user', 'token'));
     }
 
     public function logout(Request $request)
     {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
-        $user->currentAccessToken()->delete();
-        return response('', 204);
+        try {
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $user->currentAccessToken()->delete();
+            return response()->json([
+                'message' => 'Logged out successfully.'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred during logout. Please try again later.',
+                'error' => $e->getMessage() // Remove or comment out in production
+            ], 500);
+        }
     }
 }
